@@ -1343,6 +1343,11 @@
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+      if (isMobile()) {   // 移动端：水平位置 clamp 回屏内，爆炸花瓣不飞出窄屏
+        const m = CONFIG.petalSizeMax;
+        if (p.x < m) p.x = m;
+        else if (p.x > W - m) p.x = W - m;
+      }
       p.rot += p.rotV * dt;
       p.flip += p.flipV * dt;
       p.age += dt;
@@ -1370,8 +1375,13 @@
         else { p.sliding = false; p.vy = CONFIG.sakuraTerminal * 0.5; }
       }
 
+      // 移动端：最终绘制 X（含摇摆）clamp 回屏内，避免摇摆把爆炸花瓣推出屏
+      const drawX = isMobile()
+        ? Math.min(W - CONFIG.petalSizeMax, Math.max(CONFIG.petalSizeMax, p.x + sway))
+        : p.x + sway;
+
       // 尾迹
-      p.trail.push({ x: p.x + sway, y: p.y });
+      p.trail.push({ x: drawX, y: p.y });
       if (p.trail.length > 6) p.trail.shift();   // 光带长度缩短 30%
 
       // 子炸：花瓣自燃为光尘
@@ -1418,7 +1428,7 @@
       const bend = 1 + 0.1 * Math.sin(p.age * p.bendSpeed + p.bendPhase);
 
       ctx.save();
-      ctx.translate(p.x + sway, p.y);
+      ctx.translate(drawX, p.y);
       ctx.rotate(p.rot);
       ctx.scale(Math.max(0.12, flipX), 1);
       ctx.globalAlpha = alpha;
