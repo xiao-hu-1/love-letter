@@ -265,16 +265,13 @@
   }
 
   @media (max-width: 768px) {
-    /* 信纸移动端：宽度收窄到 80vw/340px（诗行更早换行），padding 缩小，正文统一 13px */
-    .letter-stage { width: min(80vw, 340px); }
+    /* 信纸移动端：宽度 88%、max 380px，padding 缩小 20%，字号/行高适配 */
+    .letter-stage { width: min(88vw, 380px); }
     .letter-flip { height: min(85vh, 600px); height: min(85dvh, 600px); }
     .page { padding: 24px 24px 27px; }
     .letter-title { font-size: 1.9rem; }
-    .letter-body { font-size: 13px; line-height: 1.6; }
-    .letter-body .salutation, .letter-body .signature { font-size: 15px; }
-    .letter-body .date { font-size: 12px; }
-    .letter-body .poem-title { font-size: 16px; }
-    .letter-body .poem-line { font-size: 13px; line-height: 2.0; }
+    .letter-body { font-size: 15px; line-height: 1.7; }
+    .letter-body .salutation, .letter-body .signature { font-size: 17px; }
     /* 移动端按钮放大触控区域（≥44px） */
     .page-btn { padding: 12px 22px; font-size: 1rem; }
     .replay { padding: 14px 32px; font-size: 1.4rem; }
@@ -342,8 +339,6 @@
       min-height: 100svh;
       min-height: 100dvh;
       overscroll-behavior-y: contain;
-      -webkit-text-size-adjust: 100%;   /* 禁止 iOS 自动放大文字，确保 13px 正文不被被动放大 */
-      text-size-adjust: 100%;
     }
 
     /* 信纸高度贴合可见区域（85dvh，上限 680px）；按钮容器避让底部安全区 */
