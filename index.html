@@ -272,6 +272,9 @@
     .letter-title { font-size: 1.9rem; }
     .letter-body { font-size: 15px; line-height: 1.7; }
     .letter-body .salutation, .letter-body .signature { font-size: 17px; }
+    /* 第一页诗：移动端字号缩小 1/3（原 2rem / 1.55rem → 1.33rem / 1.03rem） */
+    .letter-body .poem-title { font-size: 1.33rem; }
+    .letter-body .poem-line { font-size: 1.03rem; }
     /* 移动端按钮放大触控区域（≥44px） */
     .page-btn { padding: 12px 22px; font-size: 1rem; }
     .replay { padding: 14px 32px; font-size: 1.4rem; }
@@ -1330,6 +1333,8 @@
 
   function drawPetals(dt) {
     const FALL = CONFIG.fallDuration / 1000;   // 秒
+    // 信纸矩形每帧只测一次：原在循环内逐花瓣 getBoundingClientRect 触发布局重排，是移动端卡顿主因
+    const lr = letterStage.getBoundingClientRect();
     for (const p of petals) {
       if (p.state === 'bud' || p.done) continue;
 
@@ -1357,7 +1362,6 @@
       if (p.vy > 0) sway = Math.sin(p.age * p.swaySpeed + p.swayPhase) * p.swayAmp;
 
       // 信纸碰撞：贴边滑落 0.3s + 停留 0.2s 后继续下落
-      const lr = letterStage.getBoundingClientRect();
       if (phase === 'fall' && lr.width > 0) {
         const inX = p.x + sway > lr.left - 4 && p.x + sway < lr.right + 4;
         const inY = p.y > lr.top - 4 && p.y < lr.bottom + 4;
