@@ -265,13 +265,16 @@
   }
 
   @media (max-width: 768px) {
-    /* 信纸移动端：宽度 88%、max 380px，padding 缩小 20%，字号/行高适配 */
-    .letter-stage { width: min(88vw, 380px); }
+    /* 信纸移动端：宽度收窄到 80vw/340px（诗行更早换行），padding 缩小，正文统一 13px */
+    .letter-stage { width: min(80vw, 340px); }
     .letter-flip { height: min(85vh, 600px); height: min(85dvh, 600px); }
     .page { padding: 24px 24px 27px; }
     .letter-title { font-size: 1.9rem; }
-    .letter-body { font-size: 15px; line-height: 1.7; }
-    .letter-body .salutation, .letter-body .signature { font-size: 17px; }
+    .letter-body { font-size: 13px; line-height: 1.6; }
+    .letter-body .salutation, .letter-body .signature { font-size: 15px; }
+    .letter-body .date { font-size: 12px; }
+    .letter-body .poem-title { font-size: 16px; }
+    .letter-body .poem-line { font-size: 13px; line-height: 2.0; }
     /* 移动端按钮放大触控区域（≥44px） */
     .page-btn { padding: 12px 22px; font-size: 1rem; }
     .replay { padding: 14px 32px; font-size: 1.4rem; }
@@ -339,6 +342,8 @@
       min-height: 100svh;
       min-height: 100dvh;
       overscroll-behavior-y: contain;
+      -webkit-text-size-adjust: 100%;   /* 禁止 iOS 自动放大文字，确保 13px 正文不被被动放大 */
+      text-size-adjust: 100%;
     }
 
     /* 信纸高度贴合可见区域（85dvh，上限 680px）；按钮容器避让底部安全区 */
@@ -439,6 +444,17 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     CX = W / 2; CY = H / 2;
     layoutStatic();
+    // resize 后把活动花瓣 X clamp 回新宽度，避免转屏/工具栏伸缩后残留出屏花瓣
+    const pm = CONFIG.persistSizeMax;
+    for (const pp of persistentPetals) {
+      if (pp.baseX < pm) pp.baseX = pm;
+      else if (pp.baseX > W - pm) pp.baseX = W - pm;
+    }
+    for (const p of petals) {
+      if (p.state === 'bud' || p.done) continue;
+      if (p.x < pm) p.x = pm;
+      else if (p.x > W - pm) p.x = W - pm;
+    }
   }
   window.addEventListener('resize', resize);
   // iOS 工具栏展开/收起触发 visualViewport resize，重算画布尺寸
@@ -849,6 +865,7 @@
       const speed = 460 + Math.random() * 720;
       p.vx = Math.cos(ang) * speed;
       p.vy = Math.sin(ang) * speed - 150;   // 轻微上抛
+      if (isMobile()) p.vx *= 0.6;          // 移动端收窄水平弹射分量，避免横向飞出窄屏
       p.rotV = (Math.random() * 5 - 2.5);
     });
 
@@ -1022,7 +1039,7 @@
    * ================================================================ */
   function spawnPersistentPetal() {
     persistentPetals.push({
-      baseX: Math.random() * W,             // 原始路径 X（绕行后回到此）
+      baseX: CONFIG.persistSizeMax + Math.random() * Math.max(0, W - 2 * CONFIG.persistSizeMax),             // 原始路径 X（绕行后回到此）
       y: -30,
       vy: 18 + Math.random() * 30,          // 下降 18~48px/s（≈0.3~0.8px/帧，舒缓）
       age: 0,
@@ -1474,14 +1491,17 @@
           pp.avoidDir = (probeX < (lr.left + lr.right) / 2) ? -1 : 1;
         }
         if (pp.avoiding) {
-          const targetX = pp.avoidDir < 0 ? lr.left - pad - 16 : lr.right + pad + 16;
+          // 绕行目标也 clamp 回屏内，避免信纸靠边时把花瓣推到屏幕外
+          const rawTargetX = pp.avoidDir < 0 ? lr.left - pad - 16 : lr.right + pad + 16;
+          const targetX = Math.min(W - CONFIG.persistSizeMax, Math.max(CONFIG.persistSizeMax, rawTargetX));
           pp.avoidOff += (targetX - probeX) * Math.min(1, dt * 5);
           if (pp.y > lr.bottom + pad) { pp.avoiding = false; pp.avoidDir = 0; }
         } else {
           pp.avoidOff *= (1 - Math.min(1, dt * 3));   // 回落原路径
         }
       }
-      const x = pp.baseX + sway + pp.avoidOff;
+      // 最终 X 再 clamp 一次：sway + 绕行偏移叠加后也不出屏
+      const x = Math.min(W - CONFIG.persistSizeMax, Math.max(CONFIG.persistSizeMax, pp.baseX + sway + pp.avoidOff));
 
       // 底部自然淡出（1s），不生成溶解光点（与爆炸花瓣区分）
       if (!pp.fading && pp.y > H - 20) { pp.fading = true; pp.fadeT = 0; }
